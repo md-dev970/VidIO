@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: api-service
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+server:
+  port: 8081
+
+video-service:
+  base-url: ${VIDEO_SERVICE_BASE_URL:http://localhost:8082}

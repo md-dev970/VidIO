@@ -1,0 +1,22 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:processing_service_test_db;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    listener:
+      auto-startup: false
+
+kafka:
+  topics:
+    video-uploaded: video.uploaded
+    processing-completed: video.processing.completed
+    processing-failed: video.processing.failed

@@ -1,0 +1,12 @@
+.idea/
+target/
+*.log
+
+storage/original/*
+storage/processed/*
+storage/thumbnails/*
+!storage/original/.gitkeep
+!storage/processed/.gitkeep
+!storage/thumbnails/.gitkeep
+
+postgres-data/
