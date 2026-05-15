@@ -1,6 +1,9 @@
 package com.mddev.videoservice.service;
 
+import com.mddev.videoservice.dto.AdminOverviewResponse;
+import com.mddev.videoservice.dto.PresignedUrlResponse;
 import com.mddev.videoservice.dto.VideoResponse;
+import com.mddev.videoservice.entity.VideoAssetType;
 import com.mddev.videoservice.entity.VideoEntity;
 import com.mddev.videoservice.entity.VideoStatus;
 import com.mddev.videoservice.event.VideoProcessingCompletedEvent;
@@ -9,6 +12,7 @@ import com.mddev.videoservice.event.VideoUploadedEvent;
 import com.mddev.videoservice.exception.ResourceNotFoundException;
 import com.mddev.videoservice.producer.VideoEventProducer;
 import com.mddev.videoservice.repository.VideoRepository;
+import com.mddev.videoservice.security.AuthenticatedUser;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,18 +28,21 @@ public class VideoService {
 
     private final VideoRepository videoRepository;
     private final FileStorageService fileStorageService;
+    private final PresignedUrlService presignedUrlService;
     private final VideoEventProducer videoEventProducer;
 
     public VideoService(VideoRepository videoRepository,
                         FileStorageService fileStorageService,
+                        PresignedUrlService presignedUrlService,
                         VideoEventProducer videoEventProducer) {
         this.videoRepository = videoRepository;
         this.fileStorageService = fileStorageService;
+        this.presignedUrlService = presignedUrlService;
         this.videoEventProducer = videoEventProducer;
     }
 
     @Transactional
-    public VideoResponse upload(MultipartFile file) {
+    public VideoResponse upload(MultipartFile file, AuthenticatedUser owner) {
         UUID videoId = UUID.randomUUID();
         String originalPath = fileStorageService.saveOriginal(videoId, file);
         LocalDateTime now = LocalDateTime.now();
@@ -46,6 +53,9 @@ public class VideoService {
         video.setContentType(file.getContentType());
         video.setFileSize(file.getSize());
         video.setOriginalPath(originalPath);
+        video.setOwnerId(owner.id());
+        video.setOwnerUsername(owner.username());
+        video.setOwnerEmail(owner.email());
         video.setStatus(VideoStatus.UPLOADED);
         video.setCreatedAt(now);
         video.setUpdatedAt(now);
@@ -66,15 +76,48 @@ public class VideoService {
     }
 
     @Transactional(readOnly = true)
-    public VideoResponse findById(UUID id) {
+    public VideoResponse findById(UUID id, AuthenticatedUser owner) {
+        return VideoResponse.from(getVideo(id, owner.id()));
+    }
+
+    @Transactional(readOnly = true)
+    public List<VideoResponse> findAll(AuthenticatedUser owner) {
+        return videoRepository.findByOwnerIdOrderByCreatedAtDesc(owner.id()).stream()
+                .map(VideoResponse::from)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PresignedUrlResponse assetUrl(UUID id, String assetType, AuthenticatedUser owner) {
+        return presignedUrlService.createGetUrl(getVideo(id, owner.id()), VideoAssetType.fromPathValue(assetType));
+    }
+
+    @Transactional(readOnly = true)
+    public VideoResponse findByIdForAdmin(UUID id) {
         return VideoResponse.from(getVideo(id));
     }
 
     @Transactional(readOnly = true)
-    public List<VideoResponse> findAll() {
+    public List<VideoResponse> findAllForAdmin() {
         return videoRepository.findAll().stream()
                 .map(VideoResponse::from)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public AdminOverviewResponse overviewForAdmin() {
+        return new AdminOverviewResponse(
+                videoRepository.count(),
+                videoRepository.countByStatus(VideoStatus.UPLOADED),
+                videoRepository.countByStatus(VideoStatus.PROCESSING),
+                videoRepository.countByStatus(VideoStatus.COMPLETED),
+                videoRepository.countByStatus(VideoStatus.FAILED)
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public PresignedUrlResponse assetUrlForAdmin(UUID id, String assetType) {
+        return presignedUrlService.createGetUrl(getVideo(id), VideoAssetType.fromPathValue(assetType));
     }
 
     @Transactional
@@ -100,6 +143,11 @@ public class VideoService {
 
     private VideoEntity getVideo(UUID id) {
         return videoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Video not found: " + id));
+    }
+
+    private VideoEntity getVideo(UUID id, String ownerId) {
+        return videoRepository.findByIdAndOwnerId(id, ownerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Video not found: " + id));
     }
 

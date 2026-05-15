@@ -16,10 +16,22 @@ spring:
       auto-startup: false
     admin:
       auto-create: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:8089/realms/vidio/protocol/openid-connect/certs
 
-video:
-  storage:
-    base-path: target/test-storage
+storage:
+  s3:
+    endpoint: http://localhost:9000
+    public-endpoint: http://localhost:9000
+    region: us-east-1
+    bucket: vidio-videos-test
+    access-key: minioadmin
+    secret-key: minioadmin
+    path-style-access: true
+    presigned-url-expiration-minutes: 10
 
 kafka:
   topics:

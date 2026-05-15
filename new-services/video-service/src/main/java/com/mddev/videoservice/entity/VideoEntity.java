@@ -34,6 +34,15 @@ public class VideoEntity {
     @Column(name = "processed_path", columnDefinition = "TEXT")
     private String processedPath;
 
+    @Column(name = "owner_id", nullable = false, length = 100)
+    private String ownerId;
+
+    @Column(name = "owner_username", nullable = false, length = 150)
+    private String ownerUsername;
+
+    @Column(name = "owner_email", length = 255)
+    private String ownerEmail;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
     private VideoStatus status;
@@ -104,6 +113,30 @@ public class VideoEntity {
 
     public void setProcessedPath(String processedPath) {
         this.processedPath = processedPath;
+    }
+
+    public String getOwnerId() {
+        return ownerId;
+    }
+
+    public void setOwnerId(String ownerId) {
+        this.ownerId = ownerId;
+    }
+
+    public String getOwnerUsername() {
+        return ownerUsername;
+    }
+
+    public void setOwnerUsername(String ownerUsername) {
+        this.ownerUsername = ownerUsername;
+    }
+
+    public String getOwnerEmail() {
+        return ownerEmail;
+    }
+
+    public void setOwnerEmail(String ownerEmail) {
+        this.ownerEmail = ownerEmail;
     }
 
     public VideoStatus getStatus() {
