@@ -10,3 +10,12 @@ storage/thumbnails/*
 !storage/thumbnails/.gitkeep
 
 postgres-data/
+
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!terraform.tfvars.example
+
+
+k8s/aws/config.yaml

@@ -1,0 +1,131 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-realm
+  namespace: vidio
+data:
+  vidio-realm.json: |
+    {
+      "realm": "vidio",
+      "enabled": true,
+      "registrationAllowed": true,
+      "registrationEmailAsUsername": true,
+      "loginWithEmailAllowed": true,
+      "duplicateEmailsAllowed": false,
+      "verifyEmail": true,
+      "resetPasswordAllowed": true,
+      "defaultRoles": ["USER"],
+      "smtpServer": {
+        "host": "${VIDIO_SMTP_HOST}",
+        "port": "${VIDIO_SMTP_PORT}",
+        "from": "${VIDIO_SMTP_FROM}",
+        "fromDisplayName": "VidIO",
+        "auth": "${VIDIO_SMTP_AUTH}",
+        "ssl": "false",
+        "starttls": "${VIDIO_SMTP_STARTTLS}",
+        "user": "${VIDIO_SMTP_USER}",
+        "password": "${VIDIO_SMTP_PASSWORD}"
+      },
+      "roles": { "realm": [{ "name": "USER" }, { "name": "ADMIN" }] },
+      "clients": [{
+        "clientId": "vidio-dashboard",
+        "enabled": true,
+        "publicClient": true,
+        "standardFlowEnabled": true,
+        "directAccessGrantsEnabled": true,
+        "redirectUris": ["http://localhost:4200/*", "http://localhost:8088/*", "/*", "*"],
+        "webOrigins": ["http://localhost:4200", "http://localhost:8088", "+"]
+      }],
+      "users": [
+        { "username": "admin", "enabled": true, "emailVerified": true, "email": "admin@vidio.local", "credentials": [{ "type": "password", "value": "admin123", "temporary": false }], "realmRoles": ["USER", "ADMIN"] },
+        { "username": "user1", "enabled": true, "emailVerified": true, "email": "user1@vidio.local", "credentials": [{ "type": "password", "value": "user123", "temporary": false }], "realmRoles": ["USER"] },
+        { "username": "user2", "enabled": true, "emailVerified": true, "email": "user2@vidio.local", "credentials": [{ "type": "password", "value": "user123", "temporary": false }], "realmRoles": ["USER"] }
+      ]
+    }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  namespace: vidio
+spec:
+  selector:
+    app: keycloak
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  namespace: vidio
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      containers:
+        - name: keycloak
+          image: quay.io/keycloak/keycloak:25.0.6
+          args: ["start-dev", "--import-realm"]
+          ports:
+            - containerPort: 8080
+          env:
+            - name: KC_BOOTSTRAP_ADMIN_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: vidio-secrets
+                  key: KEYCLOAK_ADMIN
+            - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: vidio-secrets
+                  key: KEYCLOAK_ADMIN_PASSWORD
+            - name: VIDIO_SMTP_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: vidio-secrets
+                  key: VIDIO_SMTP_HOST
+            - name: VIDIO_SMTP_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: vidio-secrets
+                  key: VIDIO_SMTP_PORT
+            - name: VIDIO_SMTP_FROM
+              valueFrom:
+                secretKeyRef:
+                  name: vidio-secrets
+                  key: VIDIO_SMTP_FROM
+            - name: VIDIO_SMTP_USER
+              valueFrom:
+                secretKeyRef:
+                  name: vidio-secrets
+                  key: VIDIO_SMTP_USER
+            - name: VIDIO_SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: vidio-secrets
+                  key: VIDIO_SMTP_PASSWORD
+            - name: VIDIO_SMTP_AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: vidio-secrets
+                  key: VIDIO_SMTP_AUTH
+            - name: VIDIO_SMTP_STARTTLS
+              valueFrom:
+                secretKeyRef:
+                  name: vidio-secrets
+                  key: VIDIO_SMTP_STARTTLS
+          volumeMounts:
+            - name: keycloak-realm
+              mountPath: /opt/keycloak/data/import
+      volumes:
+        - name: keycloak-realm
+          configMap:
+            name: keycloak-realm

@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vidio-config
+  namespace: vidio
+data:
+  POSTGRES_DB: video_platform_db
+  SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/video_platform_db
+  SPRING_DATASOURCE_USERNAME: postgres
+  SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/vidio/protocol/openid-connect/certs
+  VIDEO_SERVICE_BASE_URL: http://video-service:8082
+  PROCESSING_SERVICE_BASE_URL: http://processing-service:8083
+  S3_ENDPOINT: http://minio:9000
+  S3_PUBLIC_ENDPOINT: http://localhost:9000
+  S3_REGION: us-east-1
+  S3_BUCKET: vidio-videos
+  S3_ACCESS_KEY: minioadmin
+  S3_PATH_STYLE_ACCESS: "true"
+  S3_PRESIGNED_URL_EXPIRATION_MINUTES: "10"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: vidio-secrets
+  namespace: vidio
+type: Opaque
+stringData:
+  POSTGRES_PASSWORD: postgres
+  S3_SECRET_KEY: minioadmin
+  MINIO_ROOT_USER: minioadmin
+  MINIO_ROOT_PASSWORD: minioadmin
+  KEYCLOAK_ADMIN: admin
+  KEYCLOAK_ADMIN_PASSWORD: admin
+  VIDIO_SMTP_HOST: email-smtp.us-east-1.amazonaws.com
+  VIDIO_SMTP_PORT: "587"
+  VIDIO_SMTP_FROM: no-reply@example.com
+  VIDIO_SMTP_USER: replace-me
+  VIDIO_SMTP_PASSWORD: replace-me
+  VIDIO_SMTP_AUTH: "true"
+  VIDIO_SMTP_STARTTLS: "true"
