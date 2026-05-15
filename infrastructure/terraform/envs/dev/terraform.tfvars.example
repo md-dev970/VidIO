@@ -1,0 +1,13 @@
+aws_region         = "us-east-1"
+project_name       = "vidio"
+cluster_name       = "vidio-dev"
+video_bucket_name  = "replace-with-globally-unique-vidio-dev-bucket"
+route53_zone_name  = "vidio.domain.com"
+app_hostname       = "vidio.domain.com"
+api_hostname       = "api.vidio.domain.com"
+ses_email_identity = "no-reply@vidio.domain.com"
+ses_domain_identity = "vidio.domain.com"
+
+# Fill these after the Kubernetes ALB ingress exists, then run terraform apply again.
+alb_dns_name = ""
+alb_zone_id  = ""

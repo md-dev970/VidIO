@@ -1,0 +1,148 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: video-service
+  namespace: vidio
+spec:
+  selector:
+    app: video-service
+  ports:
+    - port: 8082
+      targetPort: 8082
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: video-service
+  namespace: vidio
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: video-service
+  template:
+    metadata:
+      labels:
+        app: video-service
+    spec:
+      containers:
+        - name: video-service
+          image: 202197228322.dkr.ecr.us-west-2.amazonaws.com/vidio-video-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8082
+          envFrom:
+            - configMapRef:
+                name: vidio-config
+            - secretRef:
+                name: vidio-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: processing-service
+  namespace: vidio
+spec:
+  selector:
+    app: processing-service
+  ports:
+    - port: 8083
+      targetPort: 8083
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: processing-service
+  namespace: vidio
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: processing-service
+  template:
+    metadata:
+      labels:
+        app: processing-service
+    spec:
+      containers:
+        - name: processing-service
+          image: 202197228322.dkr.ecr.us-west-2.amazonaws.com/vidio-processing-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8083
+          envFrom:
+            - configMapRef:
+                name: vidio-config
+            - secretRef:
+                name: vidio-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-service
+  namespace: vidio
+spec:
+  selector:
+    app: api-service
+  ports:
+    - port: 8081
+      targetPort: 8081
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-service
+  namespace: vidio
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-service
+  template:
+    metadata:
+      labels:
+        app: api-service
+    spec:
+      containers:
+        - name: api-service
+          image: 202197228322.dkr.ecr.us-west-2.amazonaws.com/vidio-api-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8081
+          envFrom:
+            - configMapRef:
+                name: vidio-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: admin-dashboard
+  namespace: vidio
+spec:
+  selector:
+    app: admin-dashboard
+  ports:
+    - port: 80
+      targetPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: admin-dashboard
+  namespace: vidio
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: admin-dashboard
+  template:
+    metadata:
+      labels:
+        app: admin-dashboard
+    spec:
+      containers:
+        - name: admin-dashboard
+          image: 202197228322.dkr.ecr.us-west-2.amazonaws.com/vidio-admin-dashboard:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
