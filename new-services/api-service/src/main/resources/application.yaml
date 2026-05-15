@@ -5,9 +5,17 @@ spring:
     multipart:
       max-file-size: 100MB
       max-request-size: 100MB
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:8089/realms/vidio/protocol/openid-connect/certs}
 
 server:
   port: 8081
 
 video-service:
   base-url: ${VIDEO_SERVICE_BASE_URL:http://localhost:8082}
+
+processing-service:
+  base-url: ${PROCESSING_SERVICE_BASE_URL:http://localhost:8083}

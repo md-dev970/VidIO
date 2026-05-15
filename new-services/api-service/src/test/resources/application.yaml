@@ -1,0 +1,12 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:8089/realms/vidio/protocol/openid-connect/certs
+
+video-service:
+  base-url: http://localhost:8082
+
+processing-service:
+  base-url: http://localhost:8083

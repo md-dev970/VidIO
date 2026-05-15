@@ -24,7 +24,7 @@ public class VideoServiceClient {
                 .build();
     }
 
-    public String upload(MultipartFile file) {
+    public String upload(MultipartFile file, String authorizationHeader) {
         try {
             var fileHeaders = new HttpHeaders();
             fileHeaders.setContentType(MediaType.parseMediaType(contentType(file)));
@@ -38,6 +38,7 @@ public class VideoServiceClient {
 
             return restClient.post()
                     .uri("/videos")
+                    .header(HttpHeaders.AUTHORIZATION, authorizationHeader)
                     .contentType(MediaType.MULTIPART_FORM_DATA)
                     .body(body)
                     .retrieve()
@@ -47,16 +48,58 @@ public class VideoServiceClient {
         }
     }
 
-    public String findById(UUID id) {
+    public String findById(UUID id, String authorizationHeader) {
         return restClient.get()
                 .uri("/videos/{id}", id)
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader)
                 .retrieve()
                 .body(String.class);
     }
 
-    public String findAll() {
+    public String findAll(String authorizationHeader) {
         return restClient.get()
                 .uri("/videos")
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader)
+                .retrieve()
+                .body(String.class);
+    }
+
+    public String assetUrl(UUID id, String assetType, String authorizationHeader) {
+        return restClient.get()
+                .uri("/videos/{id}/assets/{assetType}/url", id, assetType)
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader)
+                .retrieve()
+                .body(String.class);
+    }
+
+    public String findAllForAdmin(String authorizationHeader) {
+        return restClient.get()
+                .uri("/admin/videos")
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader)
+                .retrieve()
+                .body(String.class);
+    }
+
+    public String findByIdForAdmin(UUID id, String authorizationHeader) {
+        return restClient.get()
+                .uri("/admin/videos/{id}", id)
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader)
+                .retrieve()
+                .body(String.class);
+    }
+
+    public String overviewForAdmin(String authorizationHeader) {
+        return restClient.get()
+                .uri("/admin/overview")
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader)
+                .retrieve()
+                .body(String.class);
+    }
+
+    public String assetUrlForAdmin(UUID id, String assetType, String authorizationHeader) {
+        return restClient.get()
+                .uri("/admin/videos/{id}/assets/{assetType}/url", id, assetType)
+                .header(HttpHeaders.AUTHORIZATION, authorizationHeader)
                 .retrieve()
                 .body(String.class);
     }
