@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,13 +24,16 @@ public class ProcessingService {
     private final ProcessingJobRepository processingJobRepository;
     private final FfmpegService ffmpegService;
     private final ProcessingEventProducer processingEventProducer;
+    private final S3StorageService s3StorageService;
 
     public ProcessingService(ProcessingJobRepository processingJobRepository,
                              FfmpegService ffmpegService,
-                             ProcessingEventProducer processingEventProducer) {
+                             ProcessingEventProducer processingEventProducer,
+                             S3StorageService s3StorageService) {
         this.processingJobRepository = processingJobRepository;
         this.ffmpegService = ffmpegService;
         this.processingEventProducer = processingEventProducer;
+        this.s3StorageService = s3StorageService;
     }
 
     @Transactional
@@ -41,34 +45,45 @@ public class ProcessingService {
         return ProcessingJobResponse.from(job);
     }
 
+    @Transactional(readOnly = true)
+    public List<ProcessingJobResponse> findAllJobsForAdmin() {
+        return processingJobRepository.findAllByOrderByCreatedAtDesc().stream()
+                .map(ProcessingJobResponse::from)
+                .toList();
+    }
+
     public void processUploadedVideo(VideoUploadedEvent event) {
         ProcessingJobEntity job = createJob(event.videoId(), event.inputPath());
         try {
             markProcessing(job);
 
-            Path inputPath = Path.of(event.inputPath());
-            Path storageRoot = inputPath.getParent().getParent();
-            Path processedDirectory = storageRoot.resolve("processed");
-            Path thumbnailDirectory = storageRoot.resolve("thumbnails");
-            Files.createDirectories(processedDirectory);
-            Files.createDirectories(thumbnailDirectory);
+            Path workDirectory = Files.createTempDirectory("vidio-" + event.videoId());
+            Path inputPath = workDirectory.resolve(event.videoId() + ".input");
+            Path outputPath = workDirectory.resolve(event.videoId() + "_720p.mp4");
+            Path thumbnailPath = workDirectory.resolve(event.videoId() + ".jpg");
+            String outputKey = "processed/" + event.videoId() + "_720p.mp4";
+            String thumbnailKey = "thumbnails/" + event.videoId() + ".jpg";
 
-            Path outputPath = processedDirectory.resolve(event.videoId() + "_720p.mp4");
-            Path thumbnailPath = thumbnailDirectory.resolve(event.videoId() + ".jpg");
-
+            s3StorageService.download(event.inputPath(), inputPath);
             ffmpegService.generateThumbnail(inputPath, thumbnailPath);
             ffmpegService.convertTo720p(inputPath, outputPath);
             double durationSeconds = ffmpegService.extractDuration(inputPath);
+            s3StorageService.upload(outputKey, outputPath, "video/mp4");
+            s3StorageService.upload(thumbnailKey, thumbnailPath, "image/jpeg");
 
-            markCompleted(job, outputPath.toString(), thumbnailPath.toString());
+            markCompleted(job, outputKey, thumbnailKey);
             processingEventProducer.publishCompleted(new VideoProcessingCompletedEvent(
                     UUID.randomUUID(),
                     event.videoId(),
-                    outputPath.toString(),
-                    thumbnailPath.toString(),
+                    outputKey,
+                    thumbnailKey,
                     durationSeconds,
                     Instant.now()
             ));
+            deleteQuietly(inputPath);
+            deleteQuietly(outputPath);
+            deleteQuietly(thumbnailPath);
+            deleteQuietly(workDirectory);
         } catch (Exception exception) {
             markFailed(job, exception.getMessage());
             processingEventProducer.publishFailed(new VideoProcessingFailedEvent(
@@ -122,6 +137,13 @@ public class ProcessingService {
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Fake processing was interrupted", exception);
+        }
+    }
+
+    private void deleteQuietly(Path path) {
+        try {
+            Files.deleteIfExists(path);
+        } catch (Exception ignored) {
         }
     }
 }

@@ -1,6 +1,11 @@
 spring:
   application:
     name: processing-service
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:8089/realms/vidio/protocol/openid-connect/certs}
 
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/video_platform_db}
@@ -37,3 +42,12 @@ kafka:
     video-uploaded: video.uploaded
     processing-completed: video.processing.completed
     processing-failed: video.processing.failed
+
+storage:
+  s3:
+    endpoint: ${S3_ENDPOINT:}
+    region: ${S3_REGION:us-east-1}
+    bucket: ${S3_BUCKET:vidio-videos}
+    access-key: ${S3_ACCESS_KEY:}
+    secret-key: ${S3_SECRET_KEY:}
+    path-style-access: ${S3_PATH_STYLE_ACCESS:true}
