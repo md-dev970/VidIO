@@ -1,9 +1,30 @@
 name: Deploy Dev
 
 on:
+  pull_request:
+    paths:
+      - ".github/**"
+      - "admin-dashboard/**"
+      - "infrastructure/**"
+      - "k8s/**"
+      - "new-services/**"
+      - "storage/**"
+      - ".gitignore"
+      - "docker-compose.yml"
+
   push:
     branches:
       - main
+
+    paths:
+      - ".github/**"
+      - "admin-dashboard/**"
+      - "infrastructure/**"
+      - "k8s/**"
+      - "new-services/**"
+      - "storage/**"
+      - ".gitignore"
+      - "docker-compose.yml"
   workflow_dispatch:
 
 permissions:
