@@ -1,0 +1,102 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  backend-tests:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - api-service
+          - video-service
+          - processing-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+      - name: Run Maven tests
+        working-directory: new-services/${{ matrix.service }}
+        run: mvn -B test
+
+  frontend-build:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install dependencies
+        working-directory: admin-dashboard
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+      - name: Build Angular app
+        working-directory: admin-dashboard
+        run: npm run build
+
+  docker-builds:
+    name: Docker build checks
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: api-service
+            context: new-services/api-service
+          - name: video-service
+            context: new-services/video-service
+          - name: processing-service
+            context: new-services/processing-service
+          - name: admin-dashboard
+            context: admin-dashboard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: false
+          tags: vidio-${{ matrix.name }}:ci
+
+  infra-validation:
+    name: Terraform and Kubernetes validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+      - name: Terraform fmt
+        run: terraform fmt -check -recursive infrastructure/terraform
+      - name: Validate bootstrap Terraform
+        working-directory: infrastructure/terraform/bootstrap
+        run: |
+          terraform init -backend=false
+          terraform validate
+      - name: Validate dev Terraform
+        working-directory: infrastructure/terraform/envs/dev
+        run: |
+          terraform init -backend=false
+          terraform validate
+      - name: Render AWS Kubernetes manifests
+        run: |
+          cp k8s/aws/config.example.yaml k8s/aws/config.yaml
+          kubectl kustomize k8s/aws >/tmp/vidio-aws-manifests.yaml

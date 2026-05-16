@@ -1,0 +1,10 @@
+aws_region        = "us-west-2"
+project_name      = "vidio"
+github_owner      = "md-dev970"
+github_repo       = "VidIO"
+state_bucket_name = "us-west-2-md-dev970-vidio-terraform-state"
+lock_table_name   = "vidio-terraform-locks"
+deploy_role_name  = "vidio-github-deploy"
+
+# Set to false only if this AWS account already has a GitHub Actions OIDC provider.
+create_github_oidc_provider = true

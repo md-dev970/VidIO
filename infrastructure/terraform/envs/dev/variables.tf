@@ -75,3 +75,9 @@ variable "node_max_size" {
   type    = number
   default = 2
 }
+
+variable "github_deploy_role_arn" {
+  type        = string
+  default     = ""
+  description = "Optional GitHub Actions deploy role ARN to grant EKS cluster admin access."
+}

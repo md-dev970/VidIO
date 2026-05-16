@@ -10,6 +10,15 @@ output "video_bucket_name" {
   value = aws_s3_bucket.videos.bucket
 }
 
+output "ecr_repository_urls" {
+  value = {
+    api_service        = aws_ecr_repository.api_service.repository_url
+    video_service      = aws_ecr_repository.video_service.repository_url
+    processing_service = aws_ecr_repository.processing_service.repository_url
+    admin_dashboard    = aws_ecr_repository.admin_dashboard.repository_url
+  }
+}
+
 output "ses_email_identity" {
   value = aws_ses_email_identity.sender.email
 }

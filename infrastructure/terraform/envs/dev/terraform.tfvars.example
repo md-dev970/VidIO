@@ -11,3 +11,7 @@ ses_domain_identity = "vidio.domain.com"
 # Fill these after the Kubernetes ALB ingress exists, then run terraform apply again.
 alb_dns_name = ""
 alb_zone_id  = ""
+
+# Fill with `terraform -chdir=infrastructure/terraform/bootstrap output -raw github_deploy_role_arn`
+# after bootstrapping CI/CD. Leave empty before bootstrap.
+github_deploy_role_arn = ""

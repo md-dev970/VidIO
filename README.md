@@ -112,6 +112,8 @@ See `docs/kubernetes.md` for image build, deployment, and port-forward details.
 
 AWS infrastructure scaffolding lives in `infrastructure/terraform/envs/dev`. It provisions a cost-conscious EKS MVP, private S3 bucket, SES sender identity, IRSA roles, and ALB controller IAM. See `docs/aws-deployment.md`.
 
+CI/CD is handled by GitHub Actions with Terraform bootstrap, pull request checks, and approved `dev` deployments. See `docs/cicd.md`.
+
 ## Verification Status
 
 - Context tests pass for `api-service`, `video-service`, and `processing-service`.

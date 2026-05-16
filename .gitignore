@@ -15,7 +15,9 @@ postgres-data/
 *.tfstate
 *.tfstate.*
 *.tfvars
+tfplan
+*.tfplan
+terraform-plan.txt
 !terraform.tfvars.example
-
 
 k8s/aws/config.yaml

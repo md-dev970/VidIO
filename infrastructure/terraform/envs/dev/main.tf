@@ -76,6 +76,11 @@ resource "aws_eks_cluster" "main" {
   role_arn = aws_iam_role.eks_cluster.arn
   version  = "1.30"
 
+  access_config {
+    authentication_mode                         = "API_AND_CONFIG_MAP"
+    bootstrap_cluster_creator_admin_permissions = true
+  }
+
   vpc_config {
     subnet_ids              = values(aws_subnet.public)[*].id
     endpoint_private_access = true
@@ -84,6 +89,10 @@ resource "aws_eks_cluster" "main" {
 
   depends_on = [aws_iam_role_policy_attachment.eks_cluster]
   tags       = local.tags
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_iam_role" "eks_nodes" {
@@ -178,6 +187,54 @@ resource "aws_s3_bucket_cors_configuration" "videos" {
     expose_headers  = ["ETag"]
     max_age_seconds = 3000
   }
+}
+
+resource "aws_ecr_repository" "api_service" {
+  name                 = "vidio-api-service"
+  image_tag_mutability = "MUTABLE"
+  force_delete         = true
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  tags = local.tags
+}
+
+resource "aws_ecr_repository" "video_service" {
+  name                 = "vidio-video-service"
+  image_tag_mutability = "MUTABLE"
+  force_delete         = true
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  tags = local.tags
+}
+
+resource "aws_ecr_repository" "processing_service" {
+  name                 = "vidio-processing-service"
+  image_tag_mutability = "MUTABLE"
+  force_delete         = true
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  tags = local.tags
+}
+
+resource "aws_ecr_repository" "admin_dashboard" {
+  name                 = "vidio-admin-dashboard"
+  image_tag_mutability = "MUTABLE"
+  force_delete         = true
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  tags = local.tags
 }
 
 resource "aws_route53_zone" "vidio" {
@@ -519,4 +576,24 @@ resource "aws_eks_addon" "ebs_csi" {
     aws_eks_node_group.main,
     aws_iam_role_policy_attachment.ebs_csi
   ]
+}
+
+resource "aws_eks_access_entry" "github_deploy" {
+  count         = var.github_deploy_role_arn == "" ? 0 : 1
+  cluster_name  = aws_eks_cluster.main.name
+  principal_arn = var.github_deploy_role_arn
+  type          = "STANDARD"
+}
+
+resource "aws_eks_access_policy_association" "github_deploy_admin" {
+  count         = var.github_deploy_role_arn == "" ? 0 : 1
+  cluster_name  = aws_eks_cluster.main.name
+  principal_arn = var.github_deploy_role_arn
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+
+  access_scope {
+    type = "cluster"
+  }
+
+  depends_on = [aws_eks_access_entry.github_deploy]
 }

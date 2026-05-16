@@ -1,0 +1,44 @@
+name: Terraform Plan
+
+on:
+  pull_request:
+    paths:
+      - "infrastructure/terraform/**"
+      - ".github/workflows/terraform-plan.yml"
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION || 'us-west-2' }}
+  TF_IN_AUTOMATION: "true"
+
+jobs:
+  plan-dev:
+    name: Plan dev infrastructure
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+      - name: Terraform init
+        working-directory: infrastructure/terraform/envs/dev
+        run: terraform init
+      - name: Terraform validate
+        working-directory: infrastructure/terraform/envs/dev
+        run: terraform validate
+      - name: Terraform plan
+        working-directory: infrastructure/terraform/envs/dev
+        run: terraform plan -no-color -out=tfplan | tee terraform-plan.txt
+      - name: Upload plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-dev-plan
+          path: infrastructure/terraform/envs/dev/terraform-plan.txt
