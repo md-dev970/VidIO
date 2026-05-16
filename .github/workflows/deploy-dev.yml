@@ -10,24 +10,36 @@ permissions:
   contents: read
   id-token: write
 
-env:
-  AWS_REGION: ${{ vars.AWS_REGION || 'us-west-2' }}
-  AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID || '202197228322' }}
-  EKS_CLUSTER_NAME: ${{ vars.EKS_CLUSTER_NAME || 'vidio-dev' }}
-  APP_HOSTNAME: ${{ vars.APP_HOSTNAME || 'vidio.md-dev970.com' }}
-  API_HOSTNAME: ${{ vars.API_HOSTNAME || 'api.vidio.md-dev970.com' }}
-  TF_IN_AUTOMATION: "true"
-
 jobs:
-  plan:
-    name: Terraform plan
+  deploy:
+    name: Plan, apply, and deploy
     runs-on: ubuntu-latest
-    outputs:
-      image-tag: ${{ steps.meta.outputs.image-tag }}
+    environment: dev
+    concurrency:
+      group: vidio-dev-deploy
+      cancel-in-progress: false
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION || 'us-west-2' }}
+      AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID || '202197228322' }}
+      EKS_CLUSTER_NAME: ${{ vars.EKS_CLUSTER_NAME || 'vidio-dev' }}
+      APP_HOSTNAME: ${{ vars.APP_HOSTNAME || 'vidio.md-dev970.com' }}
+      API_HOSTNAME: ${{ vars.API_HOSTNAME || 'api.vidio.md-dev970.com' }}
+      TF_VAR_aws_region: ${{ vars.AWS_REGION || 'us-west-2' }}
+      TF_VAR_cluster_name: ${{ vars.EKS_CLUSTER_NAME || 'vidio-dev' }}
+      TF_VAR_video_bucket_name: ${{ vars.S3_BUCKET }}
+      TF_VAR_route53_zone_name: ${{ vars.ROUTE53_ZONE_NAME || 'vidio.md-dev970.com' }}
+      TF_VAR_app_hostname: ${{ vars.APP_HOSTNAME || 'vidio.md-dev970.com' }}
+      TF_VAR_api_hostname: ${{ vars.API_HOSTNAME || 'api.vidio.md-dev970.com' }}
+      TF_VAR_ses_email_identity: ${{ vars.SES_EMAIL_IDENTITY || 'no-reply@vidio.md-dev970.com' }}
+      TF_VAR_ses_domain_identity: ${{ vars.SES_DOMAIN_IDENTITY || 'vidio.md-dev970.com' }}
+      TF_VAR_alb_dns_name: ${{ vars.ALB_DNS_NAME }}
+      TF_VAR_alb_zone_id: ${{ vars.ALB_ZONE_ID }}
+      TF_VAR_github_deploy_role_arn: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+      TF_IN_AUTOMATION: "true"
     steps:
       - uses: actions/checkout@v4
-      - id: meta
-        run: echo "image-tag=${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+      - name: Set image tag
+        run: echo "IMAGE_TAG=${GITHUB_SHA::12}" >> "$GITHUB_ENV"
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
@@ -40,42 +52,21 @@ jobs:
         run: terraform init
       - name: Terraform plan
         working-directory: infrastructure/terraform/envs/dev
-        run: terraform plan -no-color -out=tfplan | tee terraform-plan.txt
+        run: terraform plan -input=false -no-color -out=tfplan | tee terraform-plan.txt
       - name: Upload plan artifact
         uses: actions/upload-artifact@v4
         with:
           name: terraform-dev-plan
           path: infrastructure/terraform/envs/dev/terraform-plan.txt
-
-  deploy:
-    name: Apply and deploy
-    runs-on: ubuntu-latest
-    needs: plan
-    environment: dev
-    concurrency:
-      group: vidio-dev-deploy
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v4
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-      - uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "1.9.8"
       - name: Terraform apply
         working-directory: infrastructure/terraform/envs/dev
-        run: |
-          terraform init
-          terraform apply -auto-approve
+        run: terraform apply -input=false -auto-approve tfplan
       - name: Login to ECR
         uses: aws-actions/amazon-ecr-login@v2
       - uses: docker/setup-buildx-action@v3
       - name: Build and push images
         env:
           ECR: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
-          IMAGE_TAG: ${{ needs.plan.outputs.image-tag }}
         run: |
           docker build -t "$ECR/vidio-api-service:$IMAGE_TAG" -t "$ECR/vidio-api-service:latest" new-services/api-service
           docker build -t "$ECR/vidio-video-service:$IMAGE_TAG" -t "$ECR/vidio-video-service:latest" new-services/video-service
@@ -100,15 +91,15 @@ jobs:
           S3_PATH_STYLE_ACCESS: ${{ vars.S3_PATH_STYLE_ACCESS || 'false' }}
           S3_PRESIGNED_URL_EXPIRATION_MINUTES: ${{ vars.S3_PRESIGNED_URL_EXPIRATION_MINUTES || '10' }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          KEYCLOAK_ADMIN: ${{ secrets.KEYCLOAK_ADMIN }}
+          KEYCLOAK_ADMIN: ${{ vars.KEYCLOAK_ADMIN || 'admin' }}
           KEYCLOAK_ADMIN_PASSWORD: ${{ secrets.KEYCLOAK_ADMIN_PASSWORD }}
-          VIDIO_SMTP_HOST: ${{ secrets.VIDIO_SMTP_HOST }}
-          VIDIO_SMTP_PORT: ${{ secrets.VIDIO_SMTP_PORT }}
-          VIDIO_SMTP_FROM: ${{ secrets.VIDIO_SMTP_FROM }}
+          VIDIO_SMTP_HOST: ${{ vars.VIDIO_SMTP_HOST }}
+          VIDIO_SMTP_PORT: ${{ vars.VIDIO_SMTP_PORT || '587' }}
+          VIDIO_SMTP_FROM: ${{ vars.VIDIO_SMTP_FROM }}
           VIDIO_SMTP_USER: ${{ secrets.VIDIO_SMTP_USER }}
           VIDIO_SMTP_PASSWORD: ${{ secrets.VIDIO_SMTP_PASSWORD }}
-          VIDIO_SMTP_AUTH: ${{ secrets.VIDIO_SMTP_AUTH }}
-          VIDIO_SMTP_STARTTLS: ${{ secrets.VIDIO_SMTP_STARTTLS }}
+          VIDIO_SMTP_AUTH: ${{ vars.VIDIO_SMTP_AUTH || 'true' }}
+          VIDIO_SMTP_STARTTLS: ${{ vars.VIDIO_SMTP_STARTTLS || 'true' }}
         run: |
           cat > k8s/aws/config.yaml <<EOF
           apiVersion: v1
@@ -154,7 +145,6 @@ jobs:
       - name: Pin Kubernetes image tags
         env:
           ECR: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
-          IMAGE_TAG: ${{ needs.plan.outputs.image-tag }}
         run: |
           sed -i "s|$ECR/vidio-api-service:latest|$ECR/vidio-api-service:$IMAGE_TAG|g" k8s/aws/services.yaml
           sed -i "s|$ECR/vidio-video-service:latest|$ECR/vidio-video-service:$IMAGE_TAG|g" k8s/aws/services.yaml

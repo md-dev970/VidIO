@@ -96,25 +96,7 @@ terraform -chdir=infrastructure/terraform/envs/dev apply -target=aws_eks_cluster
 terraform -chdir=infrastructure/terraform/envs/dev apply
 ```
 
-## 3. GitHub Repository Variables
-
-Create these repository variables:
-
-```text
-AWS_REGION=us-west-2
-AWS_ACCOUNT_ID=202197228322
-EKS_CLUSTER_NAME=vidio-dev
-APP_HOSTNAME=vidio.md-dev970.com
-API_HOSTNAME=api.vidio.md-dev970.com
-```
-
-Create this repository secret:
-
-```text
-AWS_DEPLOY_ROLE_ARN=<bootstrap github_deploy_role_arn output>
-```
-
-## 4. GitHub Dev Environment
+## 3. GitHub Dev Environment
 
 Create a GitHub Environment named:
 
@@ -130,10 +112,28 @@ Restrict deployment branches to:
 main
 ```
 
+The deploy workflow runs Terraform plan and apply after the `dev` approval. Keep deployment values on the `dev` environment, not repository-wide, unless another workflow explicitly needs them.
+
 Add these `dev` environment variables:
 
 ```text
+AWS_REGION=us-west-2
+AWS_ACCOUNT_ID=202197228322
+EKS_CLUSTER_NAME=vidio-dev
+APP_HOSTNAME=vidio.md-dev970.com
+API_HOSTNAME=api.vidio.md-dev970.com
 S3_BUCKET=us-west-2-md-dev970-vidio-dev-bucket
+ROUTE53_ZONE_NAME=vidio.md-dev970.com
+SES_EMAIL_IDENTITY=no-reply@vidio.md-dev970.com
+SES_DOMAIN_IDENTITY=vidio.md-dev970.com
+ALB_DNS_NAME=<current ALB DNS name from kubectl get ingress -n vidio>
+ALB_ZONE_ID=<ALB canonical hosted zone id, for us-west-2 usually Z1H1FL5HABSF5>
+KEYCLOAK_ADMIN=admin
+VIDIO_SMTP_HOST=smtp-relay.brevo.com
+VIDIO_SMTP_PORT=587
+VIDIO_SMTP_FROM=no-reply@vidio.md-dev970.com
+VIDIO_SMTP_AUTH=true
+VIDIO_SMTP_STARTTLS=true
 S3_REGION=us-west-2
 S3_ENDPOINT=
 S3_PUBLIC_ENDPOINT=
@@ -144,19 +144,14 @@ S3_PRESIGNED_URL_EXPIRATION_MINUTES=10
 Add these `dev` environment secrets:
 
 ```text
+AWS_DEPLOY_ROLE_ARN=<bootstrap github_deploy_role_arn output>
 POSTGRES_PASSWORD
-KEYCLOAK_ADMIN
 KEYCLOAK_ADMIN_PASSWORD
-VIDIO_SMTP_HOST=smtp-relay.brevo.com
-VIDIO_SMTP_PORT=587
-VIDIO_SMTP_FROM=no-reply@vidio.md-dev970.com
 VIDIO_SMTP_USER
 VIDIO_SMTP_PASSWORD
-VIDIO_SMTP_AUTH=true
-VIDIO_SMTP_STARTTLS=true
 ```
 
-## 5. Branch Protection
+## 4. Branch Protection
 
 For `main`, enable:
 
@@ -174,12 +169,11 @@ Backend tests
 Frontend build
 Docker build checks
 Terraform and Kubernetes validation
-Plan dev infrastructure
 ```
 
 If GitHub shows matrix-expanded check names, select all three backend service test jobs and all four Docker build jobs.
 
-## 6. Runtime Kubernetes Config
+## 5. Runtime Kubernetes Config
 
 Do not commit:
 
@@ -201,7 +195,7 @@ Then fill local values and apply:
 kubectl apply -k k8s/aws
 ```
 
-## 7. Deployment Validation
+## 6. Deployment Validation
 
 The deploy workflow validates:
 
