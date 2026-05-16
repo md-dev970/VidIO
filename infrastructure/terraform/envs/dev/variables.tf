@@ -58,22 +58,22 @@ variable "alb_zone_id" {
 
 variable "node_instance_types" {
   type    = list(string)
-  default = ["t3.medium"]
+  default = ["t3.small"]
 }
 
 variable "node_desired_size" {
   type    = number
-  default = 1
+  default = 3
 }
 
 variable "node_min_size" {
   type    = number
-  default = 1
+  default = 2
 }
 
 variable "node_max_size" {
   type    = number
-  default = 2
+  default = 3
 }
 
 variable "github_deploy_role_arn" {
