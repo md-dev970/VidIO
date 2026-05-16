@@ -2,6 +2,24 @@ import { CommonModule } from '@angular/common';
 import { Component, Injectable, OnDestroy, OnInit, signal } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 import Keycloak from 'keycloak-js';
+import {
+  Activity,
+  AlertTriangle,
+  CheckCircle2,
+  Clock3,
+  ExternalLink,
+  FileVideo,
+  Film,
+  Image,
+  LogIn,
+  LogOut,
+  LucideAngularModule,
+  RefreshCw,
+  Shield,
+  UploadCloud,
+  UserCircle,
+  Video as VideoIcon
+} from 'lucide-angular';
 
 type Overview = {
   totalVideos: number;
@@ -179,144 +197,192 @@ async function errorMessage(response: Response): Promise<string> {
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, LucideAngularModule],
   template: `
-    <header>
-      <h1>VidIO</h1>
+    <header class="studio-header">
+      <div class="brand">
+        <span class="brand-mark"><lucide-icon [img]="Film" [size]="22"></lucide-icon></span>
+        <div>
+          <h1>VidIO</h1>
+          <span>Media Studio</span>
+        </div>
+      </div>
       <div class="session" *ngIf="auth.ready()">
-        <span *ngIf="auth.authenticated()">Signed in as {{ auth.username() }}</span>
-        <span class="role" *ngIf="auth.authenticated()">{{ auth.isAdmin() ? 'ADMIN' : 'USER' }}</span>
-        <button *ngIf="!auth.authenticated()" (click)="auth.login()">Sign in</button>
-        <button *ngIf="auth.authenticated()" (click)="auth.logout()">Sign out</button>
+        <div class="identity" *ngIf="auth.authenticated()">
+          <lucide-icon [img]="UserCircle" [size]="18"></lucide-icon>
+          <span>{{ auth.username() }}</span>
+        </div>
+        <span class="role" *ngIf="auth.authenticated()">
+          <lucide-icon [img]="Shield" [size]="14"></lucide-icon>
+          {{ auth.isAdmin() ? 'ADMIN' : 'USER' }}
+        </span>
+        <button class="ghost-button" *ngIf="!auth.authenticated()" (click)="auth.login()">
+          <lucide-icon [img]="LogIn" [size]="17"></lucide-icon>
+          Sign in
+        </button>
+        <button class="ghost-button" *ngIf="auth.authenticated()" (click)="auth.logout()">
+          <lucide-icon [img]="LogOut" [size]="17"></lucide-icon>
+          Sign out
+        </button>
       </div>
     </header>
 
-    <main *ngIf="auth.ready() && auth.authenticated(); else gate">
-      <section class="upload-panel">
-        <div>
-          <h2>Upload Video</h2>
-          <p>Choose a video file to upload and process with FFmpeg.</p>
+    <main class="studio-shell" *ngIf="auth.ready() && auth.authenticated(); else gate">
+      <section class="hero-panel">
+        <div class="hero-copy">
+          <span class="eyebrow"><lucide-icon [img]="VideoIcon" [size]="15"></lucide-icon> Upload and process</span>
+          <h2>Turn source footage into ready-to-review outputs.</h2>
+          <p>Select one video, send it through the processing pipeline, and track progress from upload to completed assets.</p>
         </div>
-        <div class="upload-controls">
+        <div class="upload-card">
+          <div class="upload-icon"><lucide-icon [img]="UploadCloud" [size]="32"></lucide-icon></div>
           <label class="file-picker">
             <input type="file" accept="video/*" (change)="selectFile($event)">
-            <span>{{ selectedFile()?.name || 'Choose file' }}</span>
+            <span>{{ selectedFile()?.name || 'Choose a video file' }}</span>
           </label>
-          <button [disabled]="!selectedFile() || uploading()" (click)="uploadSelectedFile()">
-            {{ uploading() ? 'Uploading' : 'Upload' }}
+          <button class="primary-button" [disabled]="!selectedFile() || uploading()" (click)="uploadSelectedFile()">
+            <lucide-icon [img]="uploading() ? Activity : UploadCloud" [size]="17"></lucide-icon>
+            {{ uploading() ? 'Uploading' : 'Upload video' }}
           </button>
         </div>
         <p class="error" *ngIf="uploadError()">{{ uploadError() }}</p>
         <p class="success" *ngIf="uploadMessage()">{{ uploadMessage() }}</p>
       </section>
 
-      <section>
+      <section class="panel">
         <div class="section-title">
-          <h2>My Videos</h2>
-          <button [disabled]="loadingMine()" (click)="loadMine()">Refresh</button>
-        </div>
-        <table *ngIf="myVideos().length; else emptyMine">
-          <thead>
-            <tr>
-              <th>File</th>
-              <th>Status</th>
-              <th>Size</th>
-              <th>Duration</th>
-              <th>Outputs</th>
-              <th>Updated</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let video of myVideos()">
-              <td>{{ video.originalFilename }}</td>
-              <td><span class="status" [class.status-active]="isActive(video.status)">{{ video.status }}</span></td>
-              <td>{{ formatBytes(video.fileSize) }}</td>
-              <td>{{ formatDuration(video.durationSeconds) }}</td>
-              <td>
-                <div class="asset-actions">
-                  <button *ngIf="video.originalPath" (click)="openUserAsset(video, 'original')">Open original</button>
-                  <button *ngIf="video.thumbnailPath" (click)="openUserAsset(video, 'thumbnail')">Open thumbnail</button>
-                  <button *ngIf="video.processedPath" (click)="openUserAsset(video, 'processed')">Open processed</button>
-                </div>
-              </td>
-              <td>{{ formatDate(video.updatedAt) }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <ng-template #emptyMine>
-          <div class="empty">No videos uploaded yet.</div>
-        </ng-template>
-      </section>
-
-      <ng-container *ngIf="auth.isAdmin()">
-        <section class="metrics" *ngIf="overview() as stats">
-          <article><strong>{{ stats.totalVideos }}</strong><span>Total</span></article>
-          <article><strong>{{ stats.uploadedVideos }}</strong><span>Uploaded</span></article>
-          <article><strong>{{ stats.processingVideos }}</strong><span>Processing</span></article>
-          <article><strong>{{ stats.completedVideos }}</strong><span>Completed</span></article>
-          <article><strong>{{ stats.failedVideos }}</strong><span>Failed</span></article>
-        </section>
-
-        <section>
-          <div class="section-title">
-            <h2>All Videos</h2>
-            <button [disabled]="loadingAdmin()" (click)="loadAdmin()">Refresh</button>
+          <div>
+            <span class="section-kicker">Personal library</span>
+            <h2>My Videos</h2>
           </div>
-          <table *ngIf="adminVideos().length; else emptyAdminVideos">
+          <button class="secondary-button" [disabled]="loadingMine()" (click)="loadMine()">
+            <lucide-icon [img]="RefreshCw" [size]="16"></lucide-icon>
+            Refresh
+          </button>
+        </div>
+        <div class="table-wrap" *ngIf="myVideos().length; else emptyMine">
+          <table>
             <thead>
               <tr>
                 <th>File</th>
-                <th>Owner</th>
                 <th>Status</th>
                 <th>Size</th>
                 <th>Duration</th>
                 <th>Outputs</th>
+                <th>Updated</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let video of adminVideos()">
-                <td>{{ video.originalFilename }}</td>
-                <td>{{ video.ownerUsername }}</td>
-                <td><span class="status" [class.status-active]="isActive(video.status)">{{ video.status }}</span></td>
+              <tr *ngFor="let video of myVideos()">
+                <td class="file-cell"><lucide-icon [img]="FileVideo" [size]="18"></lucide-icon><span>{{ video.originalFilename }}</span></td>
+                <td><span class="status" [ngClass]="statusClass(video.status)"><lucide-icon [img]="statusIcon(video.status)" [size]="14"></lucide-icon>{{ video.status }}</span></td>
                 <td>{{ formatBytes(video.fileSize) }}</td>
                 <td>{{ formatDuration(video.durationSeconds) }}</td>
                 <td>
                   <div class="asset-actions">
-                    <button *ngIf="video.originalPath" (click)="openAdminAsset(video, 'original')">Open original</button>
-                    <button *ngIf="video.thumbnailPath" (click)="openAdminAsset(video, 'thumbnail')">Open thumbnail</button>
-                    <button *ngIf="video.processedPath" (click)="openAdminAsset(video, 'processed')">Open processed</button>
+                    <button *ngIf="video.originalPath" (click)="openUserAsset(video, 'original')"><lucide-icon [img]="ExternalLink" [size]="14"></lucide-icon>Original</button>
+                    <button *ngIf="video.thumbnailPath" (click)="openUserAsset(video, 'thumbnail')"><lucide-icon [img]="Image" [size]="14"></lucide-icon>Thumbnail</button>
+                    <button *ngIf="video.processedPath" (click)="openUserAsset(video, 'processed')"><lucide-icon [img]="ExternalLink" [size]="14"></lucide-icon>Processed</button>
                   </div>
                 </td>
+                <td>{{ formatDate(video.updatedAt) }}</td>
               </tr>
             </tbody>
           </table>
+        </div>
+        <ng-template #emptyMine>
+          <div class="empty">
+            <lucide-icon [img]="UploadCloud" [size]="28"></lucide-icon>
+            <strong>No videos uploaded yet</strong>
+            <span>Your processed outputs will appear here after your first upload.</span>
+          </div>
+        </ng-template>
+      </section>
+
+      <ng-container *ngIf="auth.isAdmin()">
+        <section class="metrics" *ngIf="overview() as stats" aria-label="Admin overview">
+          <article><span>Total</span><strong>{{ stats.totalVideos }}</strong></article>
+          <article><span>Uploaded</span><strong>{{ stats.uploadedVideos }}</strong></article>
+          <article><span>Processing</span><strong>{{ stats.processingVideos }}</strong></article>
+          <article><span>Completed</span><strong>{{ stats.completedVideos }}</strong></article>
+          <article><span>Failed</span><strong>{{ stats.failedVideos }}</strong></article>
+        </section>
+
+        <section class="panel admin-panel">
+          <div class="section-title">
+            <div>
+              <span class="section-kicker">Admin view</span>
+              <h2>All Videos</h2>
+            </div>
+            <button class="secondary-button" [disabled]="loadingAdmin()" (click)="loadAdmin()">
+              <lucide-icon [img]="RefreshCw" [size]="16"></lucide-icon>
+              Refresh
+            </button>
+          </div>
+          <div class="table-wrap" *ngIf="adminVideos().length; else emptyAdminVideos">
+            <table>
+              <thead>
+                <tr>
+                  <th>File</th>
+                  <th>Owner</th>
+                  <th>Status</th>
+                  <th>Size</th>
+                  <th>Duration</th>
+                  <th>Outputs</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let video of adminVideos()">
+                  <td class="file-cell"><lucide-icon [img]="FileVideo" [size]="18"></lucide-icon><span>{{ video.originalFilename }}</span></td>
+                  <td>{{ video.ownerUsername }}</td>
+                  <td><span class="status" [ngClass]="statusClass(video.status)"><lucide-icon [img]="statusIcon(video.status)" [size]="14"></lucide-icon>{{ video.status }}</span></td>
+                  <td>{{ formatBytes(video.fileSize) }}</td>
+                  <td>{{ formatDuration(video.durationSeconds) }}</td>
+                  <td>
+                    <div class="asset-actions">
+                      <button *ngIf="video.originalPath" (click)="openAdminAsset(video, 'original')"><lucide-icon [img]="ExternalLink" [size]="14"></lucide-icon>Original</button>
+                      <button *ngIf="video.thumbnailPath" (click)="openAdminAsset(video, 'thumbnail')"><lucide-icon [img]="Image" [size]="14"></lucide-icon>Thumbnail</button>
+                      <button *ngIf="video.processedPath" (click)="openAdminAsset(video, 'processed')"><lucide-icon [img]="ExternalLink" [size]="14"></lucide-icon>Processed</button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
           <ng-template #emptyAdminVideos>
             <div class="empty">No videos in the system yet.</div>
           </ng-template>
         </section>
 
-        <section>
-          <h2>Processing Jobs</h2>
-          <table *ngIf="jobs().length; else emptyJobs">
-            <thead>
-              <tr>
-                <th>Video</th>
-                <th>Status</th>
-                <th>Input</th>
-                <th>Output</th>
-                <th>Error</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let job of jobs()">
-                <td>{{ job.videoId }}</td>
-                <td><span class="status" [class.status-active]="isActive(job.status)">{{ job.status }}</span></td>
-                <td>{{ job.inputPath }}</td>
-                <td>{{ job.outputPath || '-' }}</td>
-                <td>{{ job.errorMessage || '-' }}</td>
-              </tr>
-            </tbody>
-          </table>
+        <section class="panel admin-panel">
+          <div class="section-title">
+            <div>
+              <span class="section-kicker">Processing queue</span>
+              <h2>Jobs</h2>
+            </div>
+          </div>
+          <div class="table-wrap" *ngIf="jobs().length; else emptyJobs">
+            <table>
+              <thead>
+                <tr>
+                  <th>Video</th>
+                  <th>Status</th>
+                  <th>Input</th>
+                  <th>Output</th>
+                  <th>Error</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let job of jobs()">
+                  <td>{{ job.videoId }}</td>
+                  <td><span class="status" [ngClass]="statusClass(job.status)"><lucide-icon [img]="statusIcon(job.status)" [size]="14"></lucide-icon>{{ job.status }}</span></td>
+                  <td class="path-cell">{{ job.inputPath }}</td>
+                  <td class="path-cell">{{ job.outputPath || '-' }}</td>
+                  <td>{{ job.errorMessage || '-' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
           <ng-template #emptyJobs>
             <div class="empty">No processing jobs yet.</div>
           </ng-template>
@@ -326,13 +392,36 @@ async function errorMessage(response: Response): Promise<string> {
 
     <ng-template #gate>
       <main class="gate">
-        <p *ngIf="!auth.ready()">Loading session...</p>
-        <p *ngIf="auth.ready() && !auth.authenticated()">Sign in to upload videos and track processing.</p>
+        <div class="gate-card">
+          <span class="brand-mark"><lucide-icon [img]="Film" [size]="28"></lucide-icon></span>
+          <h2>VidIO Media Studio</h2>
+          <p *ngIf="!auth.ready()">Loading session...</p>
+          <p *ngIf="auth.ready() && !auth.authenticated()">Sign in to upload videos, track processing, and open your generated assets.</p>
+          <button class="primary-button" *ngIf="auth.ready() && !auth.authenticated()" (click)="auth.login()">
+            <lucide-icon [img]="LogIn" [size]="17"></lucide-icon>
+            Sign in
+          </button>
+        </div>
       </main>
     </ng-template>
   `
 })
 class AppComponent implements OnInit, OnDestroy {
+  readonly Activity = Activity;
+  readonly AlertTriangle = AlertTriangle;
+  readonly CheckCircle2 = CheckCircle2;
+  readonly Clock3 = Clock3;
+  readonly ExternalLink = ExternalLink;
+  readonly FileVideo = FileVideo;
+  readonly Film = Film;
+  readonly Image = Image;
+  readonly LogIn = LogIn;
+  readonly LogOut = LogOut;
+  readonly RefreshCw = RefreshCw;
+  readonly Shield = Shield;
+  readonly UploadCloud = UploadCloud;
+  readonly UserCircle = UserCircle;
+  readonly VideoIcon = VideoIcon;
   readonly overview = signal<Overview | null>(null);
   readonly myVideos = signal<Video[]>([]);
   readonly adminVideos = signal<Video[]>([]);
@@ -439,6 +528,32 @@ class AppComponent implements OnInit, OnDestroy {
 
   isActive(status: string): boolean {
     return status === 'UPLOADED' || status === 'PROCESSING' || status === 'PENDING';
+  }
+
+  statusClass(status: string): string {
+    if (status === 'COMPLETED') {
+      return 'status-complete';
+    }
+    if (status === 'FAILED') {
+      return 'status-failed';
+    }
+    if (this.isActive(status)) {
+      return 'status-active';
+    }
+    return 'status-neutral';
+  }
+
+  statusIcon(status: string): typeof CheckCircle2 {
+    if (status === 'COMPLETED') {
+      return CheckCircle2;
+    }
+    if (status === 'FAILED') {
+      return AlertTriangle;
+    }
+    if (this.isActive(status)) {
+      return Activity;
+    }
+    return Clock3;
   }
 
   formatBytes(value: number): string {
