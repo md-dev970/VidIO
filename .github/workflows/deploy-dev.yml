@@ -52,7 +52,7 @@ jobs:
         run: terraform init
       - name: Terraform plan
         working-directory: infrastructure/terraform/envs/dev
-        run: terraform plan -input=false -no-color -out=tfplan | tee terraform-plan.txt
+        run: terraform plan -input=false -no-color | tee terraform-plan.txt
       - name: Upload plan artifact
         uses: actions/upload-artifact@v4
         with:
@@ -60,7 +60,7 @@ jobs:
           path: infrastructure/terraform/envs/dev/terraform-plan.txt
       - name: Terraform apply
         working-directory: infrastructure/terraform/envs/dev
-        run: terraform apply -input=false -auto-approve tfplan
+        run: terraform apply -input=false -auto-approve
       - name: Login to ECR
         uses: aws-actions/amazon-ecr-login@v2
       - uses: docker/setup-buildx-action@v3
