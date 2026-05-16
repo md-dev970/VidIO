@@ -10,6 +10,8 @@
 ![Terraform](https://img.shields.io/badge/Terraform-5C4EE5?style=for-the-badge&logo=terraform&logoColor=white)
 ![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)
 
+![VidIO Overview](./screenshots/overview.png)
+
 Live app: [vidio.md-dev970.com](https://vidio.md-dev970.com)
 
 API host: [api.vidio.md-dev970.com](https://api.vidio.md-dev970.com/health)
