@@ -32,10 +32,10 @@ stringData:
   MINIO_ROOT_PASSWORD: minioadmin
   KEYCLOAK_ADMIN: admin
   KEYCLOAK_ADMIN_PASSWORD: admin
-  VIDIO_SMTP_HOST: email-smtp.us-east-1.amazonaws.com
-  VIDIO_SMTP_PORT: "587"
-  VIDIO_SMTP_FROM: no-reply@example.com
-  VIDIO_SMTP_USER: replace-me
-  VIDIO_SMTP_PASSWORD: replace-me
-  VIDIO_SMTP_AUTH: "true"
-  VIDIO_SMTP_STARTTLS: "true"
+  VIDIO_SMTP_HOST: mailpit
+  VIDIO_SMTP_PORT: "1025"
+  VIDIO_SMTP_FROM: no-reply@vidio.local
+  VIDIO_SMTP_USER: local
+  VIDIO_SMTP_PASSWORD: local
+  VIDIO_SMTP_AUTH: "false"
+  VIDIO_SMTP_STARTTLS: "false"

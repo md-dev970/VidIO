@@ -21,3 +21,4 @@ terraform-plan.txt
 !terraform.tfvars.example
 
 k8s/aws/config.yaml
+k8s/config.yaml

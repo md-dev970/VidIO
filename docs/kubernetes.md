@@ -18,6 +18,14 @@ The Kubernetes Deployments use `imagePullPolicy: IfNotPresent`, so Docker Deskto
 
 ## Apply Order
 
+Create the local Kubernetes runtime config first:
+
+```powershell
+Copy-Item k8s/config.example.yaml k8s/config.yaml
+```
+
+The copied `k8s/config.yaml` is ignored because it contains a Kubernetes `Secret`.
+
 ```powershell
 kubectl apply -f k8s/namespace.yaml
 kubectl apply -f k8s/config.yaml
@@ -59,8 +67,8 @@ MinIO console:   http://localhost:9001
 ## Notes
 
 - The included Keycloak realm import creates the `vidio` realm and demo users.
-- Self-registration is enabled. Local verification email requires SMTP values in `vidio-secrets`; Docker Compose uses Mailpit.
-- Secrets are intentionally simple local-development values.
+- Self-registration is enabled. Local Kubernetes uses Mailpit-compatible placeholder SMTP values in `k8s/config.example.yaml`.
+- Keep real Kubernetes secret values in ignored local files, CI/CD environment secrets, or a proper secret manager.
 - Production TLS, external ingress, managed storage, and real secret management are out of scope for this phase.
 
 ## AWS Overlay
