@@ -94,6 +94,16 @@ spec:
                 secretKeyRef:
                   name: vidio-secrets
                   key: KEYCLOAK_ADMIN_PASSWORD
+            - name: KEYCLOAK_ADMIN
+              valueFrom:
+                secretKeyRef:
+                  name: vidio-secrets
+                  key: KEYCLOAK_ADMIN
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: vidio-secrets
+                  key: KEYCLOAK_ADMIN_PASSWORD
             - name: VIDIO_SMTP_HOST
               valueFrom:
                 secretKeyRef:

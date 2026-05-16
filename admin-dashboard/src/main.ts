@@ -65,7 +65,7 @@ type AssetType = 'original' | 'thumbnail' | 'processed';
 const localHostnames = new Set(['localhost', '127.0.0.1']);
 const isLocalBrowser = localHostnames.has(window.location.hostname);
 const apiBaseUrl = isLocalBrowser ? 'http://localhost:8081/api' : `https://api.vidio.md-dev970.com/api`;
-const keycloakUrl = isLocalBrowser ? 'http://localhost:8089' : 'https://vidio.md-dev970.com';
+const keycloakUrl = isLocalBrowser ? 'http://localhost:8080' : 'https://vidio.md-dev970.com';
 
 @Injectable({ providedIn: 'root' })
 class AuthService {
