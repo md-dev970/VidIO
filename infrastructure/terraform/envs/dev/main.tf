@@ -90,9 +90,6 @@ resource "aws_eks_cluster" "main" {
   depends_on = [aws_iam_role_policy_attachment.eks_cluster]
   tags       = local.tags
 
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 resource "aws_iam_role" "eks_nodes" {

@@ -1,6 +1,5 @@
 # VidIO
 
-[![Live Demo](https://img.shields.io/badge/live-vidio.md--dev970.com-0f172a?style=for-the-badge&logo=googlechrome&logoColor=white)](https://vidio.md-dev970.com)
 ![Java](https://img.shields.io/badge/Java-17-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)
 ![Angular](https://img.shields.io/badge/Angular-18-DD0031?style=for-the-badge&logo=angular&logoColor=white)
@@ -11,10 +10,6 @@
 ![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)
 
 ![VidIO Overview](./screenshots/overview.png)
-
-Live app: [vidio.md-dev970.com](https://vidio.md-dev970.com)
-
-API host: [api.vidio.md-dev970.com](https://api.vidio.md-dev970.com/health)
 
 VidIO is a full-stack video processing platform built as Spring Boot microservices. Authenticated users upload videos through a modern Angular portal, originals are stored in S3-compatible storage, Kafka coordinates asynchronous FFmpeg processing, and users receive owner-scoped access to originals, thumbnails, and processed outputs through short-lived presigned URLs.
 
